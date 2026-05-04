@@ -1,0 +1,81 @@
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: radial-gradient(circle, #000000, #000);
+  color: #e0e0e0;
+}
+
+.container {
+  max-width: 800px;
+  margin: auto;
+  padding: 20px;
+}
+
+/* título */
+h1 {
+  text-align: center;
+  font-size: 2.5rem;
+  color: #b30000;
+  letter-spacing: 2px;
+}
+
+/* tarjetas */
+.card {
+  background: rgba(0, 0, 0, 0.9);
+  padding: 20px;
+  border-radius: 10px;
+  margin-bottom: 20px;
+  border: 1px solid #222;
+  box-shadow: 0 0 10px rgba(255, 0, 0, 0.1);
+}
+
+/* inputs */
+input, textarea {
+  width: 100%;
+  padding: 10px;
+  margin-top: 10px;
+  background: #141414;
+  border: 1px solid #333;
+  color: #ececec;
+  border-radius: 5px;
+}
+
+/* botones */
+button {
+  margin-top: 10px;
+  padding: 10px;
+  width: 100%;
+  background: linear-gradient(90deg, #400000, #6d0101);
+  border: none;
+  color: rgb(236, 223, 223);
+  border-radius: 5px;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+button:hover {
+  background: linear-gradient(90deg, #800000, #b80505);
+}
+
+/* navegación */
+nav {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+nav a {
+  color: #888;
+  margin: 0 10px;
+  text-decoration: none;
+}
+
+nav a:hover {
+  color: #ffffffe0;
+}
+
+/* historias */
+.story {
+  padding: 10px;
+  border-bottom: 1px solid #222;
+  opacity: 0.9;
+}
