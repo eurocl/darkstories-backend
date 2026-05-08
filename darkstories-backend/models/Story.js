@@ -1,21 +1,16 @@
-const mongoose = require("mongoose");
+import mongoose from "mongoose";
 
 const ChapterSchema = new mongoose.Schema({
   title: String,
-  content: String
+  content: String,
 });
 
 const StorySchema = new mongoose.Schema({
   title: String,
-  synopsis: String,   // 👈 NUEVO
-  cover: String,      // 👈 NUEVO (URL de imagen)
+  synopsis: String,
+  cover: String,
   userId: String,
-  chapters: [
-    {
-      title: String,
-      content: String,
-    },
-  ],
+  chapters: [ChapterSchema], // 👈 mejor práctica
 });
 
-module.exports = mongoose.model("Story", StorySchema);
+export default mongoose.model("Story", StorySchema);

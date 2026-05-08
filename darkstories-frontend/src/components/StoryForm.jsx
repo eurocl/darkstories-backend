@@ -1,5 +1,6 @@
 import { useState } from "react";
 
+
 function StoryForm({ usuario, setHistorias }) {
   const [title, setTitle] = useState("");
   const [synopsis, setSynopsis] = useState("");

@@ -1,54 +1,111 @@
-const express = require("express");
-const cors = require("cors");
-const mongoose = require("mongoose");
-const multer = require("multer");
-const path = require("path");
+import express from "express";
+import mongoose from "mongoose";
+import dotenv from "dotenv";
+import cors from "cors";
 
-const User = require("./models/User");
-const Story = require("./models/Story");
+// 👇 IMPORTAR MODELOS
+import Story from "./models/Story.js";
+
+dotenv.config();
 
 const app = express();
-
-/* =========================
-   MIDDLEWARES
-========================= */
+const PORT = process.env.PORT || 3001;
 
 app.use(cors());
 app.use(express.json());
 
-// 📁 carpeta de imágenes
-app.use("/uploads", express.static("uploads"));
-
 /* =========================
-   MULTER (PORTADAS)
+   🔍 DEBUG ENV
 ========================= */
 
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, "uploads/");
-  },
-  filename: (req, file, cb) => {
-    cb(null, Date.now() + path.extname(file.originalname));
-  },
-});
-
-const upload = multer({ storage });
+console.log("MONGO_URI =", process.env.MONGO_URI);
 
 /* =========================
-   MONGO
+   🔌 CONEXIÓN A MONGO
 ========================= */
+
+const MONGO_URI =
+  process.env.MONGO_URI || "mongodb://127.0.0.1:27017/darkstories";
 
 mongoose
-  .connect("mongodb+srv://project_db_user:<db_password>@cluster0.de8ktwf.mongodb.net/?appName=Cluster0")
-  .then(() => console.log("✅ MongoDB conectado"))
-  .catch((err) => console.log("❌ Error Mongo:", err));
+  .connect(MONGO_URI)
+  .then(() => console.log("✅ Mongo conectado"))
+  .catch((err) => {
+    console.log("❌ Error Mongo:", err);
+    process.exit(1);
+  });
 
 /* =========================
-   AUTH
+   👤 USER MODEL
+========================= */
+
+const userSchema = new mongoose.Schema({
+  username: { type: String, required: true, unique: true },
+  password: { type: String, required: true },
+});
+
+const User = mongoose.model("User", userSchema);
+
+/* =========================
+   📌 STORIES ROUTES
+========================= */
+
+// GET todas las stories
+app.get("/stories", async (req, res) => {
+  try {
+    const stories = await Story.find();
+    res.json(stories);
+  } catch (err) {
+    res.status(500).json({ error: "Error al obtener stories" });
+  }
+});
+
+// GET story por ID
+app.get("/stories/:id", async (req, res) => {
+  try {
+    const story = await Story.findById(req.params.id);
+
+    if (!story) {
+      return res.status(404).json({ error: "No encontrado" });
+    }
+
+    res.json(story);
+  } catch {
+    res.status(400).json({ error: "ID inválido" });
+  }
+});
+
+// POST story
+app.post("/stories", async (req, res) => {
+  try {
+    if (!req.body.title) {
+      return res
+        .status(400)
+        .json({ error: "El título es obligatorio" });
+    }
+
+    const nueva = new Story({
+      title: req.body.title,
+      synopsis: req.body.synopsis || "",
+      cover: req.body.cover || "",
+      userId: req.body.userId || null,
+      chapters: req.body.chapters || [],
+    });
+
+    await nueva.save();
+    res.status(201).json(nueva);
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ error: "Error al crear story" });
+  }
+});
+
+/* =========================
+   👤 USERS ROUTES
 ========================= */
 
 // REGISTER
-app.post("/register", async (req, res) => {
+app.post("/users", async (req, res) => {
   try {
     const { username, password } = req.body;
 
@@ -57,7 +114,6 @@ app.post("/register", async (req, res) => {
     }
 
     const existe = await User.findOne({ username });
-
     if (existe) {
       return res.status(400).json({ error: "Usuario ya existe" });
     }
@@ -65,166 +121,57 @@ app.post("/register", async (req, res) => {
     const nuevo = new User({ username, password });
     await nuevo.save();
 
-    res.json(nuevo);
-  } catch (error) {
-    res.status(500).json({ error: "Error en registro" });
+    res.status(201).json(nuevo);
+  } catch (err) {
+    res.status(500).json({ error: "Error creando usuario" });
   }
 });
 
-// LOGIN
+// 🔥 LOGIN (NUEVO)
 app.post("/login", async (req, res) => {
   try {
     const { username, password } = req.body;
 
-    console.log("🔐 Intento login:", username);
+    if (!username || !password) {
+      return res.status(400).json({ error: "Faltan datos" });
+    }
 
     const user = await User.findOne({ username });
 
-    if (!user || user.password !== password) {
-      console.log("❌ Login incorrecto");
-      return res.status(401).json({ error: "Credenciales incorrectas" });
+    if (!user) {
+      return res.status(404).json({ error: "Usuario no existe" });
     }
 
-    console.log("✅ Login OK:", user.username);
+    if (user.password !== password) {
+      return res.status(401).json({ error: "Contraseña incorrecta" });
+    }
 
-    res.json(user);
-  } catch (error) {
+    res.json({
+      message: "Login exitoso",
+      user: {
+        _id: user._id,
+        username: user.username,
+      },
+    });
+  } catch (err) {
     res.status(500).json({ error: "Error en login" });
   }
 });
 
-/* =========================
-   STORIES
-========================= */
-
-// CREAR HISTORIA
-app.post("/stories", upload.single("cover"), async (req, res) => {
+// GET usuarios
+app.get("/users", async (req, res) => {
   try {
-    const { title, userId, synopsis } = req.body;
-
-    if (!userId) {
-      return res.status(400).json({ error: "Falta userId" });
-    }
-
-    const nueva = new Story({
-      title,
-      userId,
-      synopsis,
-      cover: req.file ? "/uploads/" + req.file.filename : null,
-      chapters: [],
-    });
-
-    await nueva.save();
-    res.json(nueva);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: "Error creando historia" });
-  }
-});
-
-// 🔥 TRAER TODAS (para pruebas)
-app.get("/stories", async (req, res) => {
-  try {
-    const historias = await Story.find();
-    res.json(historias);
-  } catch (error) {
-    res.status(500).json({ error: "Error al traer historias" });
-  }
-});
-
-// 🔥 TRAER POR USUARIO
-app.get("/stories/user/:userId", async (req, res) => {
-  try {
-    const historias = await Story.find({
-      userId: req.params.userId,
-    });
-
-    res.json(historias);
-  } catch (error) {
-    res.status(500).json({ error: "Error al traer historias" });
-  }
-});
-
-// OBTENER UNA HISTORIA
-app.get("/story/:id", async (req, res) => {
-  try {
-    const story = await Story.findById(req.params.id);
-
-    if (!story) {
-      return res.status(404).json({ error: "No existe" });
-    }
-
-    res.json(story);
-  } catch (error) {
-    res.status(500).json({ error: "Error al traer historia" });
-  }
-});
-
-// ELIMINAR HISTORIA
-app.delete("/stories/:id", async (req, res) => {
-  try {
-    await Story.findByIdAndDelete(req.params.id);
-    res.json({ message: "Historia eliminada" });
-  } catch (error) {
-    res.status(500).json({ error: "Error eliminando historia" });
+    const users = await User.find();
+    res.json(users);
+  } catch (err) {
+    res.status(500).json({ error: "Error al obtener usuarios" });
   }
 });
 
 /* =========================
-   CAPÍTULOS
+   🚀 START SERVER
 ========================= */
 
-// AGREGAR CAPÍTULO
-app.post("/stories/:id/chapters", async (req, res) => {
-  try {
-    const { title, content } = req.body;
-
-    const story = await Story.findById(req.params.id);
-
-    if (!story) {
-      return res.status(404).json({ error: "Historia no encontrada" });
-    }
-
-    story.chapters.push({ title, content });
-
-    await story.save();
-
-    res.json(story);
-  } catch (error) {
-    res.status(500).json({ error: "Error agregando capítulo" });
-  }
-});
-
-// ELIMINAR CAPÍTULO
-app.delete("/stories/:id/chapters/:chapterId", async (req, res) => {
-  try {
-    const story = await Story.findById(req.params.id);
-
-    if (!story) {
-      return res.status(404).json({ error: "Historia no encontrada" });
-    }
-
-    story.chapters = story.chapters.filter(
-      (c) => c._id.toString() !== req.params.chapterId
-    );
-
-    await story.save();
-
-    res.json(story);
-  } catch (error) {
-    res.status(500).json({ error: "Error eliminando capítulo" });
-  }
-});
-
-
-
-app.get("/api/hola", (req, res) => {
-  res.json({ mensaje: "Hola mundo backend" });
-});
-/* =========================
-   SERVER
-========================= */
-
-app.listen(3001, () => {
-  console.log("Servidor en http://localhost:3001");
+app.listen(PORT, () => {
+  console.log(`🚀 Servidor en http://localhost:${PORT}`);
 });

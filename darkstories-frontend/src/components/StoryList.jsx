@@ -1,16 +1,16 @@
 import StoryCard from "./StoryCard";
 
-function StoryList({ historias }) {
+function StoryList({ historias, onClickStory }) {
   if (!historias || historias.length === 0) {
     return <p>No hay historias todavía</p>;
   }
 
   return (
-    <div className="card">
-      <h2>Mis historias</h2>
-
+    <div className="grid">
       {historias.map((h) => (
-        <StoryCard key={h._id} historia={h} />
+        <div key={h._id} onClick={() => onClickStory(h)}>
+          <StoryCard historia={h} />
+        </div>
       ))}
     </div>
   );

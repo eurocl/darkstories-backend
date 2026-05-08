@@ -1,36 +1,60 @@
 import { useState } from "react";
 
+const API_URL = "https://backend-hola-fqzv.onrender.com";
+
 function Register() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
 
   const registrar = async () => {
-    const res = await fetch("http://localhost:3001/register", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ username, password }),
-    });
+    try {
+      const res = await fetch(`${API_URL}/users`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ username, password }),
+      });
 
-    if (!res.ok) {
-      alert("Usuario ya existe");
-      return;
+      const data = await res.json();
+
+      if (!res.ok) {
+        alert(data.error || "Error al crear usuario");
+        return;
+      }
+
+      alert("Usuario creado!");
+      setUsername("");
+      setPassword("");
+    } catch (err) {
+      console.log(err);
+      alert("Error de conexión con el servidor");
     }
-
-    alert("Usuario creado!");
   };
 
   return (
-  <div className="auth-card">
-    <h2>Login</h2>
+    <div className="auth-card">
+      <h2>Registro</h2>
 
-    <input type="text" placeholder="Usuario" />
-    <input type="password" placeholder="Contraseña" />
+      <input
+        type="text"
+        placeholder="Usuario"
+        value={username}
+        onChange={(e) => setUsername(e.target.value)}
+      />
 
-    <button>Iniciar sesión</button>
-  </div>
-);
+      <input
+        type="password"
+        placeholder="Contraseña"
+        value={password}
+        onChange={(e) => setPassword(e.target.value)}
+      />
+
+      <button onClick={registrar}>
+        Registrarse
+      </button>
+    </div>
+  );
 }
 
 export default Register;

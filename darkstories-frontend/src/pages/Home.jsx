@@ -47,15 +47,7 @@ function Home({ usuario }) {
           <p>🔒 Debes iniciar sesión</p>
         )}
 
-        <textarea
-          placeholder="Escribí tu historia oscura..."
-          value={texto}
-          onChange={(e) => setTexto(e.target.value)}
-        />
-
-        <button onClick={agregarHistoria}>
-          Guardar historia
-        </button>
+       
 
         <ul>
           {historias.map((h) => (
