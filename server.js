@@ -3,14 +3,15 @@ import mongoose from "mongoose";
 import dotenv from "dotenv";
 import cors from "cors";
 
-import upload from "./middleware/upload.js";
+// ❌ TEMPORALMENTE SACAMOS MULTER
+// import upload from "./middleware/upload.js";
 
-// 👇 MODELOS
 import Story from "./models/Story.js";
 
 dotenv.config();
 
 const app = express();
+
 const PORT = process.env.PORT || 3001;
 
 /* =========================
@@ -18,7 +19,10 @@ const PORT = process.env.PORT || 3001;
 ========================= */
 
 app.use(cors());
+
 app.use(express.json());
+
+app.use(express.urlencoded({ extended: true }));
 
 /* =========================
    DEBUG
@@ -37,11 +41,16 @@ const MONGO_URI =
 mongoose
   .connect(MONGO_URI)
   .then(() => {
+
     console.log("✅ Mongo conectado");
+
   })
   .catch((err) => {
+
     console.log("❌ Error Mongo:", err);
+
     process.exit(1);
+
   });
 
 /* =========================
@@ -49,6 +58,7 @@ mongoose
 ========================= */
 
 const userSchema = new mongoose.Schema({
+
   username: {
     type: String,
     required: true,
@@ -59,9 +69,13 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+
 });
 
-const User = mongoose.model("User", userSchema);
+const User = mongoose.model(
+  "User",
+  userSchema
+);
 
 /* =========================
    STORIES
@@ -69,6 +83,7 @@ const User = mongoose.model("User", userSchema);
 
 /* GET TODAS */
 app.get("/stories", async (req, res) => {
+
   try {
 
     const stories = await Story.find();
@@ -84,18 +99,24 @@ app.get("/stories", async (req, res) => {
     });
 
   }
+
 });
 
 /* GET POR ID */
 app.get("/stories/:id", async (req, res) => {
+
   try {
 
-    const story = await Story.findById(req.params.id);
+    const story = await Story.findById(
+      req.params.id
+    );
 
     if (!story) {
+
       return res.status(404).json({
         error: "Historia no encontrada",
       });
+
     }
 
     res.json(story);
@@ -109,59 +130,66 @@ app.get("/stories/:id", async (req, res) => {
     });
 
   }
+
 });
 
-/* CREAR STORY */
-app.post(
-  "/stories",
-  upload.single("cover"),
-  async (req, res) => {
+/* =========================
+   CREAR STORY
+========================= */
 
-    try {
+app.post("/stories", async (req, res) => {
 
-      console.log("BODY:", req.body);
-      console.log("FILE:", req.file);
+  try {
 
-      const { title, synopsis, userId } = req.body;
+    console.log("BODY:", req.body);
 
-      // 🔥 VALIDACIÓN
-      if (!title || title.trim() === "") {
-        return res.status(400).json({
-          error: "El título es obligatorio",
-        });
-      }
+    const {
+      title,
+      synopsis,
+      userId,
+    } = req.body;
 
-      const nueva = new Story({
+    // 🔥 VALIDACIÓN
+    if (!title || title.trim() === "") {
 
-        title,
-
-        synopsis: synopsis || "",
-
-        cover: req.file
-          ? req.file.path
-          : "",
-
-        userId: userId || null,
-
-        chapters: [],
-
-      });
-
-      await nueva.save();
-
-      res.status(201).json(nueva);
-
-    } catch (err) {
-
-      console.log(err);
-
-      res.status(500).json({
-        error: "Error al crear story",
+      return res.status(400).json({
+        error: "El título es obligatorio",
       });
 
     }
+
+    const nueva = new Story({
+
+      title: title.trim(),
+
+      synopsis: synopsis || "",
+
+      // ❌ SIN CLOUDINARY TEMPORAL
+      cover: "",
+
+      userId: userId || null,
+
+      chapters: [],
+
+    });
+
+    await nueva.save();
+
+    console.log("✅ STORY CREADA");
+
+    res.status(201).json(nueva);
+
+  } catch (err) {
+
+    console.log(err);
+
+    res.status(500).json({
+      error: "Error al crear story",
+    });
+
   }
-);
+
+});
 
 /* =========================
    USERS
@@ -172,12 +200,17 @@ app.post("/users", async (req, res) => {
 
   try {
 
-    const { username, password } = req.body;
+    const {
+      username,
+      password,
+    } = req.body;
 
     if (!username || !password) {
+
       return res.status(400).json({
         error: "Faltan datos",
       });
+
     }
 
     const existe = await User.findOne({
@@ -185,9 +218,11 @@ app.post("/users", async (req, res) => {
     });
 
     if (existe) {
+
       return res.status(400).json({
         error: "Usuario ya existe",
       });
+
     }
 
     const nuevo = new User({
@@ -208,6 +243,7 @@ app.post("/users", async (req, res) => {
     });
 
   }
+
 });
 
 /* LOGIN */
@@ -215,12 +251,17 @@ app.post("/login", async (req, res) => {
 
   try {
 
-    const { username, password } = req.body;
+    const {
+      username,
+      password,
+    } = req.body;
 
     if (!username || !password) {
+
       return res.status(400).json({
         error: "Faltan datos",
       });
+
     }
 
     const user = await User.findOne({
@@ -228,24 +269,30 @@ app.post("/login", async (req, res) => {
     });
 
     if (!user) {
+
       return res.status(404).json({
         error: "Usuario no existe",
       });
+
     }
 
     if (user.password !== password) {
+
       return res.status(401).json({
         error: "Contraseña incorrecta",
       });
+
     }
 
     res.json({
+
       message: "Login exitoso",
 
       user: {
         _id: user._id,
         username: user.username,
       },
+
     });
 
   } catch (err) {
@@ -257,6 +304,7 @@ app.post("/login", async (req, res) => {
     });
 
   }
+
 });
 
 /* GET USERS */
@@ -277,6 +325,7 @@ app.get("/users", async (req, res) => {
     });
 
   }
+
 });
 
 /* =========================
