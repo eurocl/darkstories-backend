@@ -3,8 +3,7 @@ import mongoose from "mongoose";
 import dotenv from "dotenv";
 import cors from "cors";
 
-// ❌ TEMPORALMENTE SACAMOS MULTER
-// import upload from "./middleware/upload.js";
+import upload from "./middleware/upload.js";
 
 import Story from "./models/Story.js";
 
@@ -28,7 +27,10 @@ app.use(express.urlencoded({ extended: true }));
    DEBUG
 ========================= */
 
-console.log("MONGO_URI =", process.env.MONGO_URI);
+console.log(
+  "MONGO_URI =",
+  process.env.MONGO_URI
+);
 
 /* =========================
    MONGO
@@ -42,12 +44,17 @@ mongoose
   .connect(MONGO_URI)
   .then(() => {
 
-    console.log("✅ Mongo conectado");
+    console.log(
+      "✅ Mongo conectado"
+    );
 
   })
   .catch((err) => {
 
-    console.log("❌ Error Mongo:", err);
+    console.log(
+      "❌ Error Mongo:",
+      err
+    );
 
     process.exit(1);
 
@@ -57,20 +64,21 @@ mongoose
    USER MODEL
 ========================= */
 
-const userSchema = new mongoose.Schema({
+const userSchema =
+  new mongoose.Schema({
 
-  username: {
-    type: String,
-    required: true,
-    unique: true,
-  },
+    username: {
+      type: String,
+      required: true,
+      unique: true,
+    },
 
-  password: {
-    type: String,
-    required: true,
-  },
+    password: {
+      type: String,
+      required: true,
+    },
 
-});
+  });
 
 const User = mongoose.model(
   "User",
@@ -82,251 +90,331 @@ const User = mongoose.model(
 ========================= */
 
 /* GET TODAS */
-app.get("/stories", async (req, res) => {
+app.get(
+  "/stories",
+  async (req, res) => {
 
-  try {
+    try {
 
-    const stories = await Story.find();
+      const stories =
+        await Story.find();
 
-    res.json(stories);
+      res.json(stories);
 
-  } catch (err) {
+    } catch (err) {
 
-    console.log(err);
+      console.log(err);
 
-    res.status(500).json({
-      error: "Error al obtener stories",
-    });
-
-  }
-
-});
-
-/* GET POR ID */
-app.get("/stories/:id", async (req, res) => {
-
-  try {
-
-    const story = await Story.findById(
-      req.params.id
-    );
-
-    if (!story) {
-
-      return res.status(404).json({
-        error: "Historia no encontrada",
+      res.status(500).json({
+        error:
+          "Error al obtener stories",
       });
 
     }
 
-    res.json(story);
+  }
+);
 
-  } catch (err) {
+/* GET POR ID */
+app.get(
+  "/stories/:id",
+  async (req, res) => {
 
-    console.log(err);
+    try {
 
-    res.status(400).json({
-      error: "ID inválido",
-    });
+      const story =
+        await Story.findById(
+          req.params.id
+        );
+
+      if (!story) {
+
+        return res
+          .status(404)
+          .json({
+            error:
+              "Historia no encontrada",
+          });
+
+      }
+
+      res.json(story);
+
+    } catch (err) {
+
+      console.log(err);
+
+      res.status(400).json({
+        error: "ID inválido",
+      });
+
+    }
 
   }
-
-});
+);
 
 /* =========================
    CREAR STORY
 ========================= */
 
-app.post("/stories", async (req, res) => {
+app.post(
+  "/stories",
 
-  try {
+  upload.single("cover"),
 
-    console.log("BODY:", req.body);
+  async (req, res) => {
 
-    const {
-      title,
-      synopsis,
-      userId,
-    } = req.body;
+    try {
 
-    // 🔥 VALIDACIÓN
-    if (!title || title.trim() === "") {
+      console.log(
+        "BODY:",
+        req.body
+      );
 
-      return res.status(400).json({
-        error: "El título es obligatorio",
+      console.log(
+        "FILE:",
+        req.file
+      );
+
+      const {
+        title,
+        synopsis,
+        userId,
+      } = req.body;
+
+      // 🔥 VALIDACIÓN
+      if (
+        !title ||
+        title.trim() === ""
+      ) {
+
+        return res
+          .status(400)
+          .json({
+            error:
+              "El título es obligatorio",
+          });
+
+      }
+
+      const nueva = new Story({
+
+        title: title.trim(),
+
+        synopsis:
+          synopsis || "",
+
+        cover: req.file
+          ? req.file.path
+          : "",
+
+        userId:
+          userId || null,
+
+        chapters: [],
+
+      });
+
+      await nueva.save();
+
+      res
+        .status(201)
+        .json(nueva);
+
+    } catch (err) {
+
+      console.log(err);
+
+      res.status(500).json({
+        error:
+          "Error al crear story",
       });
 
     }
 
-    const nueva = new Story({
-
-      title: title.trim(),
-
-      synopsis: synopsis || "",
-
-      // ❌ SIN CLOUDINARY TEMPORAL
-      cover: "",
-
-      userId: userId || null,
-
-      chapters: [],
-
-    });
-
-    await nueva.save();
-
-    console.log("✅ STORY CREADA");
-
-    res.status(201).json(nueva);
-
-  } catch (err) {
-
-    console.log(err);
-
-    res.status(500).json({
-      error: "Error al crear story",
-    });
-
   }
-
-});
+);
 
 /* =========================
    USERS
 ========================= */
 
 /* REGISTER */
-app.post("/users", async (req, res) => {
+app.post(
+  "/users",
+  async (req, res) => {
 
-  try {
+    try {
 
-    const {
-      username,
-      password,
-    } = req.body;
+      const {
+        username,
+        password,
+      } = req.body;
 
-    if (!username || !password) {
+      if (
+        !username ||
+        !password
+      ) {
 
-      return res.status(400).json({
-        error: "Faltan datos",
+        return res
+          .status(400)
+          .json({
+            error:
+              "Faltan datos",
+          });
+
+      }
+
+      const existe =
+        await User.findOne({
+          username,
+        });
+
+      if (existe) {
+
+        return res
+          .status(400)
+          .json({
+            error:
+              "Usuario ya existe",
+          });
+
+      }
+
+      const nuevo =
+        new User({
+          username,
+          password,
+        });
+
+      await nuevo.save();
+
+      res
+        .status(201)
+        .json(nuevo);
+
+    } catch (err) {
+
+      console.log(err);
+
+      res.status(500).json({
+        error:
+          "Error creando usuario",
       });
 
     }
-
-    const existe = await User.findOne({
-      username,
-    });
-
-    if (existe) {
-
-      return res.status(400).json({
-        error: "Usuario ya existe",
-      });
-
-    }
-
-    const nuevo = new User({
-      username,
-      password,
-    });
-
-    await nuevo.save();
-
-    res.status(201).json(nuevo);
-
-  } catch (err) {
-
-    console.log(err);
-
-    res.status(500).json({
-      error: "Error creando usuario",
-    });
 
   }
-
-});
+);
 
 /* LOGIN */
-app.post("/login", async (req, res) => {
+app.post(
+  "/login",
+  async (req, res) => {
 
-  try {
+    try {
 
-    const {
-      username,
-      password,
-    } = req.body;
+      const {
+        username,
+        password,
+      } = req.body;
 
-    if (!username || !password) {
+      if (
+        !username ||
+        !password
+      ) {
 
-      return res.status(400).json({
-        error: "Faltan datos",
+        return res
+          .status(400)
+          .json({
+            error:
+              "Faltan datos",
+          });
+
+      }
+
+      const user =
+        await User.findOne({
+          username,
+        });
+
+      if (!user) {
+
+        return res
+          .status(404)
+          .json({
+            error:
+              "Usuario no existe",
+          });
+
+      }
+
+      if (
+        user.password !==
+        password
+      ) {
+
+        return res
+          .status(401)
+          .json({
+            error:
+              "Contraseña incorrecta",
+          });
+
+      }
+
+      res.json({
+
+        message:
+          "Login exitoso",
+
+        user: {
+          _id: user._id,
+          username:
+            user.username,
+        },
+
+      });
+
+    } catch (err) {
+
+      console.log(err);
+
+      res.status(500).json({
+        error:
+          "Error en login",
       });
 
     }
-
-    const user = await User.findOne({
-      username,
-    });
-
-    if (!user) {
-
-      return res.status(404).json({
-        error: "Usuario no existe",
-      });
-
-    }
-
-    if (user.password !== password) {
-
-      return res.status(401).json({
-        error: "Contraseña incorrecta",
-      });
-
-    }
-
-    res.json({
-
-      message: "Login exitoso",
-
-      user: {
-        _id: user._id,
-        username: user.username,
-      },
-
-    });
-
-  } catch (err) {
-
-    console.log(err);
-
-    res.status(500).json({
-      error: "Error en login",
-    });
 
   }
-
-});
+);
 
 /* GET USERS */
-app.get("/users", async (req, res) => {
+app.get(
+  "/users",
+  async (req, res) => {
 
-  try {
+    try {
 
-    const users = await User.find();
+      const users =
+        await User.find();
 
-    res.json(users);
+      res.json(users);
 
-  } catch (err) {
+    } catch (err) {
 
-    console.log(err);
+      console.log(err);
 
-    res.status(500).json({
-      error: "Error al obtener usuarios",
-    });
+      res.status(500).json({
+        error:
+          "Error al obtener usuarios",
+      });
+
+    }
 
   }
-
-});
+);
 
 /* =========================
    SERVER
@@ -335,7 +423,7 @@ app.get("/users", async (req, res) => {
 app.listen(PORT, () => {
 
   console.log(
-    `🚀 Servidor en http://localhost:${PORT}`
+    `Servidor en http://localhost:${PORT}`
   );
 
 });
