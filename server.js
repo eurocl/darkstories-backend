@@ -159,78 +159,20 @@ app.get(
 
 app.post(
   "/stories",
-
   upload.single("cover"),
-
   async (req, res) => {
 
-    try {
+    console.log("🔥 LLEGÓ REQUEST");
 
-      console.log(
-        "BODY:",
-        req.body
-      );
+    console.log("BODY:", req.body);
 
-      console.log(
-        "FILE:",
-        req.file
-      );
+    console.log("FILE:", req.file);
 
-      const {
-        title,
-        synopsis,
-        userId,
-      } = req.body;
-
-      // 🔥 VALIDACIÓN
-      if (
-        !title ||
-        title.trim() === ""
-      ) {
-
-        return res
-          .status(400)
-          .json({
-            error:
-              "El título es obligatorio",
-          });
-
-      }
-
-      const nueva = new Story({
-
-        title: title.trim(),
-
-        synopsis:
-          synopsis || "",
-
-        cover: req.file
-          ? req.file.path
-          : "",
-
-        userId:
-          userId || null,
-
-        chapters: [],
-
-      });
-
-      await nueva.save();
-
-      res
-        .status(201)
-        .json(nueva);
-
-    } catch (err) {
-
-      console.log(err);
-
-      res.status(500).json({
-        error:
-          "Error al crear story",
-      });
-
-    }
+    return res.json({
+      success: true,
+      body: req.body,
+      file: req.file,
+    });
 
   }
 );
